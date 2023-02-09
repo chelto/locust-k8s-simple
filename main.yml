@@ -1,0 +1,139 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: localdisk
+provisioner: kubernetes.io/no-provisioner
+allowVolumeExpansion: true
+---
+
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: locust-leader-pv
+spec:
+  storageClassName: localdisk
+  persistentVolumeReclaimPolicy: Recycle
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: /tmp/pvoutput
+---
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: locust-leader-pvc
+spec:
+  storageClassName: localdisk
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: locust-leader-service
+spec:
+  type: NodePort
+  selector:
+    app: locust-leader
+  ports:
+    - protocol: TCP
+      port: 8089
+      targetPort: 8089
+      name: leader-ui-port
+    - protocol: TCP
+      port: 5557
+      targetPort: 5557
+      name: leader-listener
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: locust-leader-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: locust-leader
+  template:
+    metadata:
+      labels:
+        app: locust-leader
+    spec:
+      containers:
+      - name: locust-web-ui
+        image: chetlo/locustchet
+        args: ["--master"]
+        ports:
+          - containerPort: 8089
+          - containerPort: 5557
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "200m"
+          limits:
+            memory: "1024Mi"
+            cpu: "500m"
+        volumeMounts:
+        - name: locust-leader-pv
+          mountPath: /mnt/locust
+      volumes:
+        - name: locust-leader-pv
+          persistentVolumeClaim:
+            claimName: locust-leader-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: locust-worker-service
+spec:
+  type: ClusterIP
+  selector:
+    app: locust-worker
+  ports:
+    - protocol: TCP
+      port: 5557
+      targetPort: 5557
+
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: locust-worker-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: locust-worker
+  template:
+    metadata:
+      labels:
+        app: locust-worker
+    spec:
+      containers:
+      - name: locust-worker
+        image: chetlo/locustchet
+        args: ["--worker", "--master-host=locust-leader-service"]
+        ports:
+        - containerPort: 5557
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "200m"
+          limits:
+            memory: "1024Mi"
+            cpu: "500m"
+        volumeMounts:
+        - name: locust-leader-pv
+          mountPath: /mnt/locust
+      volumes:
+        - name: locust-leader-pv
+          persistentVolumeClaim:
+            claimName: locust-leader-pvc
