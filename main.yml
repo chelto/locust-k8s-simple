@@ -1,11 +1,4 @@
-kind: Namespace
-apiVersion: v1
-metadata:
-  name: locust-namespace
-  labels:
-    name: locust-test
 
----
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
@@ -126,7 +119,7 @@ metadata:
   name: locust-worker-deployment
   namespace: locust-test
 spec:
-  replicas: 2
+  replicas: 3
   selector:
     matchLabels:
       app: locust-worker

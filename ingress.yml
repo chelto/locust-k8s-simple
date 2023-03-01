@@ -22,7 +22,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: nginx-service-loadbalancer
+  name: locust-test-loadbalancer
 spec:
   type: LoadBalancer
   selector:
@@ -31,3 +31,23 @@ spec:
     - protocol: TCP
       port: 8089
       targetPort: 8089
+
+# apiVersion: extensions/v1beta1
+# kind: Ingress
+# metadata:
+#   name: locust-loadbalancer
+#   namespace: locust-test
+#   annotations:
+#     # service.beta.kubernetes.io/aws-load-balancer-type: "alb"
+#     # service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: "ip"
+#     kubernetes.io/ingress.class: "alb"
+#     alb.ingress.kubernetes.io/scheme: internet-facing
+# spec:
+#   rules:
+#     - http:
+#         paths:
+#           - path: /*
+#             backend:
+#               serviceName: locust-leader-service
+#               servicePort: 8089
+
