@@ -48,6 +48,7 @@ metadata:
   name: locust-leader-service
   namespace: locust-test
 spec:
+  type: NodePort
   selector:
     app: locust-leader
   ports:
@@ -55,6 +56,7 @@ spec:
       port: 8089
       targetPort: 8089
       name: leader-ui-port
+      nodePort: 30001
     - protocol: TCP
       port: 5557
       targetPort: 5557
